@@ -183,37 +183,50 @@ router.post('/validate-uac', async (req, res) => {
   }
 });
 
-// Route to fetch all data for a specified user by username
-router.get('/user/:username', async (req, res) => {
-    try {
-      const { username } = req.params;
-  
-      // Query the user collection by username
-      const userSnapshot = await db.collection('users').where('username', '==', username).get();
-  
-      if (userSnapshot.empty) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-  
-      // Assuming usernames are unique, get the first document
-      const userDoc = userSnapshot.docs[0];
-      const userData = userDoc.data();
-  
-      // Fetch the user's subscriptions
-      const subscriptionsSnapshot = await userDoc.ref.collection('subscriptions').get();
-      const subscriptions = subscriptionsSnapshot.docs.map(doc => doc.data());
-  
-      // Combine user data and subscriptions
-      const userResponse = {
-        ...userData,
-        subscriptions: subscriptions
-      };
-  
-      res.status(200).json(userResponse);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch user data: ' + error.message });
+//GET /api/user?username=user1 (to search by username) or GET /api/user?email=user1@example.com
+// Route to fetch all data for a specified user by username or email
+router.get('/user', async (req, res) => {
+  try {
+    const { username, email } = req.query;
+
+    if (!username && !email) {
+      return res.status(400).json({ error: 'Username or email is required' });
     }
+
+    let userSnapshot;
+
+    if (username) {
+      // Query the user collection by username
+      userSnapshot = await db.collection('users').where('username', '==', username).get();
+    } else if (email) {
+      // Query the user collection by email
+      userSnapshot = await db.collection('users').where('email', '==', email).get();
+    }
+
+    if (userSnapshot.empty) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Assuming usernames and emails are unique, get the first document
+    const userDoc = userSnapshot.docs[0];
+    const userData = userDoc.data();
+
+    // Fetch the user's subscriptions
+    const subscriptionsSnapshot = await userDoc.ref.collection('subscriptions').get();
+    const subscriptions = subscriptionsSnapshot.docs.map(doc => doc.data());
+
+    // Combine user data and subscriptions
+    const userResponse = {
+      ...userData,
+      subscriptions: subscriptions
+    };
+
+    res.status(200).json(userResponse);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch user data: ' + error.message });
+  }
 });
+
   
 
 //update user activity status
