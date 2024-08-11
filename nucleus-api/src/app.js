@@ -1,34 +1,20 @@
 const express = require('express');
-const userRegisterRoutes = require('./routes/userRegisterRoutes');
-const userRoutes = require('./routes/userRoutes');
-const webLoginRoutes = require('./routes/webLoginRoutes');
-const clientLoginRoutes = require('./routes/clientLoginRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const licenseRoutes = require('./routes/licenseRoutes')
-
-
-
+const userRoutes = require('./routes/user');
+const licenseRoutes = require('./routes/license')
+const activityTracker = require('./middleware/tracker')
+const licenseCleanup = require('./middleware/licenseCleanup')
+//setting up express application
 const app = express();
-
 app.use(express.json());
-
-app.use('/api', userRegisterRoutes);
-
-// Use the license routes
+//routes
+app.use('/api', userRoutes);
 app.use('/api/licenses', licenseRoutes);
 
-// Use the user routes
-app.use('/api', userRoutes);
+//start our tracker for activity
+activityTracker();
 
-// Use the web login route
-app.use('/api', webLoginRoutes);
-
-// Use the client login route
-app.use('/api', clientLoginRoutes);
-
-// Use the admin routes
-app.use('/api/admin', adminRoutes);
-
+//start our license cleanup which will remove used licenses from user and store them in a seperate used license database file
+licenseCleanup();
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
